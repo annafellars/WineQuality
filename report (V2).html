@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.353">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Assessing Wine Quality</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="report (V2)_files/libs/clipboard/clipboard.min.js"></script>
+<script src="report (V2)_files/libs/quarto-html/quarto.js"></script>
+<script src="report (V2)_files/libs/quarto-html/popper.min.js"></script>
+<script src="report (V2)_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="report (V2)_files/libs/quarto-html/anchor.min.js"></script>
+<link href="report (V2)_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="report (V2)_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="report (V2)_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="report (V2)_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="report (V2)_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Assessing Wine Quality</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p><span class="math inline">\(\text{Ethan Beckstead, Anna Fellars, Becca Goldrup, Meggan Green}\)</span></p>
+<div style="page-break-after: always;"></div>
+<section id="abstract" class="level1">
+<h1>Abstract</h1>
+<p>In this report, we use data from samples of the Portuguese vinho verde wine to assess the effect of wine color and a series of physicochemical tests on wine quality assessment. We seek to understand two main questions. First, which variables are useful in predicting wine quality, and what are their effects? Second, are there significant interactions among predictors and is a model including interactions more useful than one without? We find that color, volatile acidity, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, sulphates, and alcohol are all significant predictors of wine quality. While there are significant interactions in the model, we find that a model including interactions is not significantly different from a model without interactions. Thus, we advocate for the use of the simpler model.</p>
+</section>
+<section id="problem-and-motivation" class="level1">
+<h1>Problem and Motivation</h1>
+<p>The wine industry is growing, becoming more accessible to a wider range of consumers. Portugal is the eighth-highest wine-exporting country, with its vinho verde wine being a particularly popular export. As this industry grows, companies have begun investing in new technology to improve wine production and selling processes. Two factors are critical elements in this context: wine certification and quality assessment. Certification is done to assure the quality of the wine for the market and safeguard human health. Quality evaluation, which is part of the certification process, is done to improve wine-making by identifying the most influential factors in quality outcomes and stratifying wines to set prices.</p>
+<p>Wine certification is assessed by both physicochemical and sensory tests. Physicochemical tests include easily measurable attributes such as pH, density, and alcohol content, while sensory tests rely on human experts. However, the relationship between the physicochemical and sensory analysis is not well understood. If we could better understand how physicochemical tests affect taste rating, then companies would be better able to predict wine quality while in the production phase, allowing them to optimize production and sell higher-quality wines.</p>
+<section id="data-description" class="level3">
+<h3 class="anchored" data-anchor-id="data-description">Data Description</h3>
+<p>In our study, we combined two data sets related to red and white variants of the vinho verde wine from the north of Portugal. Data were collected to predict wine quality based on a series of physicochemical tests. There are 11 physicochemical predictors used in the model: fixed acidity (g(tartaric acid)/dm^3), volatile acidity (g(acetic acid)/dm^3), citric acid (g/dm^3), residual sugar (g/dm^3), chlorides (g(sodium chloride)/dm^3), free sulfur dioxide (mg/dm^3), total sulfur dioxide (mg/dm^3), density (g/cm^3), pH, sulfates (g(potassium sulfate)/dm^3), and alcohol (vol.%). Lastly, wine color is also used as a binary predictor variable, with 0 representing red and 1 representing white. The response variable, wine quality, was measured as the median score of three sensory assessors who graded the wine on a scale of 0 (very bad) to 10 (excellent). A total of 6497 wine samples were collected, of which 1599 were red and 4898 were white. The observational unit is the individual wine samples.</p>
+</section>
+<section id="questions-of-interest" class="level3">
+<h3 class="anchored" data-anchor-id="questions-of-interest">Questions of Interest</h3>
+<p>When gathering the data, researchers were unclear on the potential relevance of the predictor variables. Thus, we first seek to understand which physiochemical tests are useful predictors to model wine quality, and what the effect of the relevant variables are. Second, we seek to understand if there are potentially significant interactions between predictors and if including these interactions significantly improves our model.</p>
+</section>
+<section id="regression-methods" class="level3">
+<h3 class="anchored" data-anchor-id="regression-methods">Regression Methods</h3>
+<p>To analyze our first question, we will use variable selection to fit a multiple linear regression model. The variable selection method we use is the elastic net (using MSE as the model metric). After selecting the variables we will use and fitting the linear model, we will run diagnostic checks to ensure that the linear regression assumptions are met. The theoretical model, prior to using variable selection methods, is as follows:</p>
+<p><span class="math display">\[\begin{align*}
+\text{Quality}_i &amp;= \beta_0 + \beta_1 \times \text{I}(\text{Color}_i = \text{White}) + \beta_2 \times \text{FixedAcidity}_i \\
+&amp;\quad + \beta_3 \times \text{VolatileAcidity}_i + \beta_4 \times \text{CitricAcid}_i + \beta_5 \times \text{ResidualSugar}_i \\
+&amp;\quad + \beta_6 \times \text{Chlorides}_i + \beta_7 \times \text{FreeSulfurDioxide}_i + \beta_8 \times \text{TotalSulfurDioxide}_i \\
+&amp;\quad + \beta_9 \times \text{Density}_i + \beta_{10} \times \text{PH}_i + \beta_{11} \times \text{Sulphates}_i \\
+&amp;\quad + \beta_{12} \times \text{Alcohol}_i + \epsilon_i, \text{ where } \epsilon_i \stackrel{iid}{\tilde{}}N(0,\sigma^2)
+\end{align*}\]</span></p>
+<p>To analyze our second question, we will first find all of the potentially significant interactions between predictor variables. Because there are a larger number of predictors in our model, and thus a large number of potential interactions, we then utilize variable selection again to ensure our model is not overfit. We use the step-wise variable selection method (using BIC as the model metric) and elastic net. After fitting the linear model, now including interaction terms, we again run diagnostic checks to ensure that assumptions are still met. Lastly, we perform an ANOVA analysis to test if the model with interactions is significantly different than the model fit without interactions. This will allow us to test if our model is improved by including interaction effects.</p>
+</section>
+</section>
+<section id="analyses-results-and-interpretation" class="level1">
+<h1>Analyses, Results, and Interpretation</h1>
+<p>To answer our first question, we first begin running variable selection. Elastic net is a shrinkage method, in which estimated coefficients are shrunk towards 0, meaning it can also be used as a variable selection method. This is a beneficial method to address potential multicollinearity, as it slightly biases the coefficients to reduce their variance. Elastic net tends to have better predictive performance than other shrinkage methods, as it can select more than one variable from a group of correlated predictors.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>data_x <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(data_train[, <span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>])</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>data_y <span class="ot">&lt;-</span> data_train[, <span class="dv">13</span>]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>data_elastic_cv <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(<span class="at">x =</span> data_x, </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>                          <span class="at">y =</span> data_y, </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                          <span class="at">type.measure =</span> <span class="st">"mse"</span>, </span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>                          <span class="at">alpha =</span> <span class="fl">0.5</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(data_elastic_cv, <span class="at">s =</span> <span class="st">"lambda.1se"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>13 x 1 sparse Matrix of class "dgCMatrix"
+                                s1
+(Intercept)           2.4225834615
+color                -0.0920616775
+fixed_acidity         .           
+volatile_acidity     -1.2127857716
+citric_acid           .           
+residual_sugar        0.0123454131
+chlorides            -0.3026900063
+free_sulfur_dioxide   0.0022404976
+total_sulfur_dioxide -0.0001793293
+density               .           
+pH                    0.0422940631
+sulphates             0.3553626445
+alcohol               0.3276424281</code></pre>
+</div>
+</div>
+<p>Based on the results of elastic net, we identified the following predictors to be used in our multiple linear regression model: color, volatile acidity, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, pH, sulphates, and alcohol.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>bestmod <span class="ot">&lt;-</span> <span class="fu">lm</span>(quality <span class="sc">~</span> color <span class="sc">+</span> volatile_acidity <span class="sc">+</span> residual_sugar <span class="sc">+</span> chlorides <span class="sc">+</span> free_sulfur_dioxide <span class="sc">+</span> total_sulfur_dioxide <span class="sc">+</span> pH <span class="sc">+</span> sulphates <span class="sc">+</span> alcohol, <span class="at">data =</span> data_train)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>data_train<span class="sc">$</span>residuals <span class="ot">&lt;-</span> bestmod<span class="sc">$</span>residuals</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>data_train<span class="sc">$</span>fitted <span class="ot">&lt;-</span> bestmod<span class="sc">$</span>fitted.values</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We then fit the multiple linear regression model, but before using this model, it is critical to check the diagnostic assumptions to ensure that it is valid to be used for predictions. First, to check that the relationship between the predictor variables and quality rating is linear, we used partial regression plots.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">avPlots</span>(bestmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-3-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Each of these plots shows a linear relationship between the variables, indicating that this assumption is met. For independence, because the wine samples all came from one northern Portugal region, there could be spatial dependence. It was unclear how the data was collected, so we cannot verify independence, but we will proceed as though this assumption is met. To check that the residuals are normally distributed, we used a Q-Q plot and the Shapiro-Wilk test.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(bestmod, <span class="at">which =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">1</span>)  <span class="sc">+</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">coord_equal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-4-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(data_train<span class="sc">$</span>residuals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Shapiro-Wilk normality test
+
+data:  data_train$residuals
+W = 0.99418, p-value = 4.193e-10</code></pre>
+</div>
+</div>
+<p>Based on the Q-Q plot, there seems to be some non-normality, which is confirmed by the Shapiro-Wilk test. Because we have high outliers in the data, we cannot perform a transformation to meet this assumption. We could try a robust regression that minimizes the absolute value of errors, which handles outliers better. However, this is beyond the scope of the class, so we will proceed as though the assumption is met.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(bestmod, <span class="at">which =</span> <span class="dv">3</span>, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-5-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The equal variance assumption is also met, as the relationship is largely linear and centered around 0. The appearance of the plot points in an abnormal pattern due to the nature of our response variable as a numeric scale, which can be treated as continuous but results in this unique plot. To check that there are no influential points in the data set, we use a plot of Cook’s distance.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a> <span class="fu">autoplot</span>(bestmod, <span class="at">which =</span> <span class="dv">4</span>, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">1</span>)  <span class="sc">+</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-6-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Based on this plot, we conclude that this assumption is also met, as there are no points that have a Cook’s distance of greater than 0.5. Lastly, we check for multicollinearity by checking the VIFs of the predictor variables.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">vif</span>(bestmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               color     volatile_acidity       residual_sugar 
+            4.231486             1.864476             1.485705 
+           chlorides  free_sulfur_dioxide total_sulfur_dioxide 
+            1.573827             2.197818             3.898129 
+                  pH            sulphates              alcohol 
+            1.200047             1.479070             1.416567 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(<span class="fu">vif</span>(bestmod)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.149681</code></pre>
+</div>
+</div>
+<p>This assumption is also met, as no VIFs exceed 10, and the mean is close to 1. Because each of the assumptions necessary for multiple linear regression is met, we can move forward with using this model.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(bestmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = quality ~ color + volatile_acidity + residual_sugar + 
+    chlorides + free_sulfur_dioxide + total_sulfur_dioxide + 
+    pH + sulphates + alcohol, data = data_train)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-3.1705 -0.4816 -0.0304  0.4676  2.7466 
+
+Coefficients:
+                       Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)           1.9052644  0.3296721   5.779 8.21e-09 ***
+color1               -0.2816033  0.0630452  -4.467 8.22e-06 ***
+volatile_acidity     -1.6186704  0.1075355 -15.052  &lt; 2e-16 ***
+residual_sugar        0.0253534  0.0033246   7.626 3.16e-14 ***
+chlorides            -1.2012545  0.4474086  -2.685  0.00729 ** 
+free_sulfur_dioxide   0.0061216  0.0011371   5.383 7.83e-08 ***
+total_sulfur_dioxide -0.0012666  0.0004587  -2.761  0.00579 ** 
+pH                    0.1499886  0.0890669   1.684  0.09228 .  
+sulphates             0.4807734  0.1086199   4.426 9.91e-06 ***
+alcohol               0.3634747  0.0130475  27.858  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.7461 on 3238 degrees of freedom
+Multiple R-squared:  0.3013,    Adjusted R-squared:  0.2994 
+F-statistic: 155.2 on 9 and 3238 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>Based on this model, holding all else constant, a red wine sample will have an average quality ranking of 1.91. Holding all else constant, white wine samples will have an average quality ranking 0.25 points lower than red wine samples. This is highly significant, with a p-value of less than 0.001. Holding all else constant, as volatile acidity increases by 1 g/dm^3, average quality ranking will decrease by 1.59 points. This is highly significant, with a p-value of less than 0.001. Holding all else constant, as residual sugar increases by 1 gm/dm^3, average quality ranking will increase by 0.02 points. Although this is highly significant, with a p-value of less than 0.001, this is a very small effect on overall taste rating and thus may not play as important of a role as other predictors. Holding all else constant, as the sodium chloride content increases by 1 g/dm^3, the average quality ranking decreases by 1.28 points. This is significant, with a p-value of less than 0.01. Holding all else constant, as free sulfur dioxide increases by 1 mg/dm^3, average quality ranking increases by 0.006. Holding all else constant, as total sulfur dioxide increases by 1 mg/dm^3, average quality ranking decreases by 0.001. Although both of these are significant, their effects are almost minute on quality ranking. Holding all else constant, as the pH increases by 1, average quality ranking increases by 0.13, but this relationship is not significant at a 0.05 level. Holding all else constant, as potassium sulphate content increases by 1 g/dm^3, average quality ranking increases by 0.52. This is highly significant, with a p-value of less than 0.001. Lastly, as the alcohol volume increases by 1%, holding all else constant, the average quality ranking increases by 0.36. This is highly significant, with a p-value of less than 0.001. Adjusted for the number of predictors, this model can explain 30.59% of the variance in wine quality ranking.</p>
+<p>To answer our second question, we begin by fitting a multiple linear regression model with all potentially significant interaction effects included.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Finding all significant two-way interactions</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>data_train1 <span class="ot">&lt;-</span> data_train <span class="sc">|&gt;</span> </span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>residuals, <span class="sc">-</span>fitted)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>allmod <span class="ot">&lt;-</span> <span class="fu">lm</span>(quality <span class="sc">~</span> .<span class="sc">^</span><span class="dv">2</span>, data_train1)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">anova</span>(allmod)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>p_values <span class="ot">&lt;-</span> results[, <span class="st">"Pr(&gt;F)"</span>]</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>var_names <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">coef</span>(allmod))</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>significant_vars <span class="ot">&lt;-</span> var_names[p_values <span class="sc">&lt;</span> <span class="fl">0.005</span>]</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Fitting model</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>intmod <span class="ot">&lt;-</span> <span class="fu">lm</span>(quality <span class="sc">~</span> color <span class="sc">+</span> fixed_acidity <span class="sc">+</span> citric_acid <span class="sc">+</span> residual_sugar <span class="sc">+</span> free_sulfur_dioxide <span class="sc">+</span> total_sulfur_dioxide <span class="sc">+</span> density <span class="sc">+</span> pH <span class="sc">+</span> sulphates <span class="sc">+</span> color<span class="sc">:</span>fixed_acidity <span class="sc">+</span> color<span class="sc">:</span>chlorides <span class="sc">+</span> color<span class="sc">:</span>density <span class="sc">+</span> color<span class="sc">:</span>pH <span class="sc">+</span> fixed_acidity<span class="sc">:</span>volatile_acidity <span class="sc">+</span> fixed_acidity<span class="sc">:</span>citric_acid <span class="sc">+</span> fixed_acidity<span class="sc">:</span>chlorides <span class="sc">+</span> volatile_acidity<span class="sc">:</span>sulphates <span class="sc">+</span> volatile_acidity<span class="sc">:</span>alcohol <span class="sc">+</span> residual_sugar<span class="sc">:</span>chlorides <span class="sc">+</span> residual_sugar<span class="sc">:</span>total_sulfur_dioxide <span class="sc">+</span> residual_sugar<span class="sc">:</span>density <span class="sc">+</span> chlorides<span class="sc">:</span>pH <span class="sc">+</span> chlorides<span class="sc">:</span>alcohol <span class="sc">+</span> total_sulfur_dioxide<span class="sc">:</span>pH <span class="sc">+</span> density<span class="sc">:</span>sulphates, <span class="at">data =</span> data_train1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We then use elastic net to reduce the model to only include interactions that most improve the model along the given metric. The results of the methods are given below.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>selected_columns <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"color"</span>,<span class="st">"fixed_acidity"</span>, <span class="st">"citric_acid"</span>, <span class="st">"residual_sugar"</span>,</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"free_sulfur_dioxide"</span>, </span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"total_sulfur_dioxide"</span>, <span class="st">"density"</span>, <span class="st">"pH"</span>, <span class="st">"sulphates"</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>data_x_with_interactions <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> color<span class="sc">*</span>density <span class="sc">+</span> color<span class="sc">*</span>pH <span class="sc">+</span> </span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                                   fixed_acidity<span class="sc">:</span>volatile_acidity <span class="sc">+</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                                    sulphates <span class="sc">+</span> total_sulfur_dioxide <span class="sc">+</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                                    free_sulfur_dioxide <span class="sc">+</span> residual_sugar <span class="sc">+</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                    citric_acid <span class="sc">+</span> fixed_acidity <span class="sc">+</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                                   fixed_acidity<span class="sc">:</span>citric_acid <span class="sc">+</span> </span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                                   fixed_acidity<span class="sc">:</span>chlorides <span class="sc">+</span> </span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>                                   residual_sugar<span class="sc">:</span>total_sulfur_dioxide <span class="sc">+</span> </span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>                                   residual_sugar<span class="sc">:</span>density <span class="sc">+</span> </span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>                                   pH<span class="sc">:</span>chlorides <span class="sc">+</span> </span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>                                   chlorides<span class="sc">:</span>alcohol <span class="sc">+</span> </span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>                                   total_sulfur_dioxide<span class="sc">:</span>pH, <span class="at">data =</span> data_train1)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>data_x_with_interactions <span class="ot">&lt;-</span> data_x_with_interactions[, <span class="sc">-</span><span class="fu">which</span>(<span class="fu">colnames</span>(data_x_with_interactions) <span class="sc">==</span> <span class="st">"(Intercept)"</span>)]</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>data_elastic_cv <span class="ot">&lt;-</span> <span class="fu">cv.glmnet</span>(<span class="at">x =</span> data_x_with_interactions, </span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>                             <span class="at">y =</span> data_train1<span class="sc">$</span>quality, </span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>                             <span class="at">type.measure =</span> <span class="st">"mse"</span>, </span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>                             <span class="at">alpha =</span> <span class="fl">0.5</span>) </span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(data_elastic_cv, <span class="at">s =</span> <span class="st">"lambda.1se"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>20 x 1 sparse Matrix of class "dgCMatrix"
+                                               s1
+(Intercept)                          2.197706e+02
+color1                              -2.634584e-01
+density                             -2.198497e+02
+pH                                   9.536704e-01
+sulphates                            8.849189e-01
+total_sulfur_dioxide                -1.349565e-03
+free_sulfur_dioxide                  3.871644e-03
+residual_sugar                       4.309234e-02
+citric_acid                          1.862910e-01
+fixed_acidity                        2.066178e-01
+color1:density                      -2.961465e-01
+color1:pH                            .           
+fixed_acidity:volatile_acidity      -1.442955e-01
+fixed_acidity:citric_acid            .           
+fixed_acidity:chlorides              .           
+total_sulfur_dioxide:residual_sugar  .           
+density:residual_sugar               5.544208e-02
+pH:chlorides                        -5.333286e-01
+chlorides:alcohol                    1.767402e-02
+pH:total_sulfur_dioxide              .           </code></pre>
+</div>
+</div>
+<p>Based on the variable selection, we include the following interactions in our model: fixed acidity and volatile acidity, density and residual sugar, pH and chlorides, and pH and total sulfur dioxide. The results of the new model, including interaction effects, are given below. The assumptions for multiple linear regression were still met when interactions were included in the model (see the appendix for more details). Although not all variables in the model are significant, they were included because they had a significant interaction effect.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>interaction_mod <span class="ot">&lt;-</span> <span class="fu">lm</span>(quality <span class="sc">~</span> color<span class="sc">*</span>density <span class="sc">+</span> pH <span class="sc">+</span> sulphates <span class="sc">+</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                        total_sulfur_dioxide <span class="sc">+</span> free_sulfur_dioxide <span class="sc">+</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                        residual_sugar <span class="sc">+</span> citric_acid <span class="sc">+</span> fixed_acidity <span class="sc">+</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                        fixed_acidity<span class="sc">:</span>volatile_acidity <span class="sc">+</span> </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                        density<span class="sc">:</span>residual_sugar <span class="sc">+</span> pH<span class="sc">:</span>chlorides <span class="sc">+</span> </span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                        pH<span class="sc">:</span>total_sulfur_dioxide,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data =</span> data_train1)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(interaction_mod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = quality ~ color * density + pH + sulphates + total_sulfur_dioxide + 
+    free_sulfur_dioxide + residual_sugar + citric_acid + fixed_acidity + 
+    fixed_acidity:volatile_acidity + density:residual_sugar + 
+    pH:chlorides + pH:total_sulfur_dioxide, data = data_train1)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-3.3787 -0.4895 -0.0503  0.4830  2.8503 
+
+Coefficients:
+                                 Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)                     1.986e+02  1.806e+01  10.994  &lt; 2e-16 ***
+color1                          1.125e+02  1.825e+01   6.164 7.99e-10 ***
+density                        -2.006e+02  1.822e+01 -11.013  &lt; 2e-16 ***
+pH                              1.451e+00  2.271e-01   6.391 1.88e-10 ***
+sulphates                       8.957e-01  1.096e-01   8.172 4.32e-16 ***
+total_sulfur_dioxide            6.889e-03  5.199e-03   1.325 0.185283    
+free_sulfur_dioxide             4.366e-03  1.155e-03   3.782 0.000159 ***
+residual_sugar                 -2.255e+00  2.987e-01  -7.549 5.67e-14 ***
+citric_acid                     7.369e-02  1.135e-01   0.649 0.516123    
+fixed_acidity                   2.635e-01  1.954e-02  13.486  &lt; 2e-16 ***
+color1:density                 -1.139e+02  1.835e+01  -6.209 6.02e-10 ***
+fixed_acidity:volatile_acidity -1.925e-01  1.525e-02 -12.627  &lt; 2e-16 ***
+density:residual_sugar          2.395e+00  2.999e-01   7.986 1.92e-15 ***
+pH:chlorides                   -3.812e-01  1.487e-01  -2.563 0.010413 *  
+pH:total_sulfur_dioxide        -2.243e-03  1.615e-03  -1.389 0.164778    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.7486 on 3233 degrees of freedom
+Multiple R-squared:  0.2979,    Adjusted R-squared:  0.2948 
+F-statistic: 97.97 on 14 and 3233 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>To test if the model including interactions is significantly different from the model without interactions, we used an ANOVA comparison. In this, our null hypothesis is that there is no significant difference in the predictive performance of the two models, while the alternative hypothesis is that there is a significant difference in the predictive performance.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">anova</span>(interaction_mod, bestmod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Analysis of Variance Table
+
+Model 1: quality ~ color * density + pH + sulphates + total_sulfur_dioxide + 
+    free_sulfur_dioxide + residual_sugar + citric_acid + fixed_acidity + 
+    fixed_acidity:volatile_acidity + density:residual_sugar + 
+    pH:chlorides + pH:total_sulfur_dioxide
+Model 2: quality ~ color + volatile_acidity + residual_sugar + chlorides + 
+    free_sulfur_dioxide + total_sulfur_dioxide + pH + sulphates + 
+    alcohol
+  Res.Df    RSS Df Sum of Sq F Pr(&gt;F)
+1   3233 1811.5                      
+2   3238 1802.7 -5    8.8991         </code></pre>
+</div>
+</div>
+<p>The results of the F-test are insignificant. Thus, we fail to reject the null hypothesis that there is no significant difference in the predictive performance of the two models. Because the model including interactive effects is not significantly better than the model without, we suggest that it is better to use the simpler model for ease of interpretation.</p>
+</section>
+<section id="conclusions" class="level1">
+<h1>Conclusions</h1>
+<p>Ultimately, we find that color, volatile acidity, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, sulfates, and alcohol are each significant predictors of wine quality, although some of these predictors have very small effects on quality ranking. While there were significant interactions between predictors, the model overall was not significantly different from a model without interaction effects and thus suggests that the model without predictors should be used going forward. The predictive ability of this model is beneficial to companies, who can use these tests to better predict wine quality to optimize their product production and create higher quality wines. However, it should be noted that the generalizability of this model is limited, as it can only be generalized to Vinho Verde wines coming out of Portugal. Further research should be done to expand these findings to other types of brands and other exporting countries.</p>
+</section>
+<section id="contributions" class="level1">
+<h1>Contributions</h1>
+<p>We coordinated several meetings with everyone in attendance to choose a data set, discuss questions of interest, run through model assumptions, and interpret output. We took turns generating code to do this analysis. Becca worked on the base model, Anna created the interaction model, and Ethan used variable selection for the interaction model and tested for significant difference between the two. Meggan interpreted the final model selected and its significance for predicting wine quality, as well as composed the report. Anna and Becca met with instructors to review errors before submission. We all met as a group to cover concerns and check our understanding of our results. Dr.&nbsp;Heiner was extremely helpful in helping us conduct a study that made us feel statistically empowered. He was the most valuable group member of us all.</p>
+<div style="page-break-after: always;"></div>
+</section>
+<section id="appendix" class="level1">
+<h1>Appendix</h1>
+<p>Below are the results of the assumption checks for the model including interaction effects.</p>
+<p>Linearity Assumption: met. All plots show linear relationships between variables.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">avPlots</span>(interaction_mod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-14-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-14-2.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Independence Assumption: same conclusion as model without interactions. We proceed as though it is met.</p>
+<p>Normality Assumption: not met. However, like with the model without interactions, robust regression is beyond the scope of our course. Thus, we do not perform a transformation and proceed as though the assumption is met.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(bestmod, <span class="at">which =</span> <span class="dv">2</span>, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">1</span>)  <span class="sc">+</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">coord_equal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-15-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>data_train1<span class="sc">$</span>residuals <span class="ot">&lt;-</span> interaction_mod<span class="sc">$</span>residuals</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro.test</span>(data_train<span class="sc">$</span>residuals)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Shapiro-Wilk normality test
+
+data:  data_train$residuals
+W = 0.99418, p-value = 4.193e-10</code></pre>
+</div>
+</div>
+<p>Equal Variance Assumption: met, relationship is fairly linear.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(interaction_mod, <span class="at">which =</span> <span class="dv">3</span>, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-16-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>No influential points: met. No points greater than 0.5.</p>
+<div class="cell" data-layout-align="center" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a> <span class="fu">autoplot</span>(interaction_mod, <span class="at">which =</span> <span class="dv">4</span>, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">nrow =</span> <span class="dv">1</span>)  <span class="sc">+</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a> <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>)) <span class="sc">+</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">aspect.ratio =</span> <span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 row containing missing values or values outside the scale range
+(`geom_segment()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 row containing missing values or values outside the scale range
+(`geom_text()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="report--V2-_files/figure-html/unnamed-chunk-17-1.png" style="width:50.0%;height:50.0%" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>No multicollinearity: looking at the scaled values in the 4th column (GVIF^(1/(2*Df))), we see no VIF exceeds 10, and their mean is close to 1.</p>
+<div class="cell" style="font-size: 0.8em;">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>super_vifs <span class="ot">&lt;-</span> <span class="fu">vif</span>(interaction_mod, <span class="at">type =</span> <span class="st">"predictor"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>GVIFs computed for predictors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>super_vifs</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          GVIF Df GVIF^(1/(2*Df))
+color                44.317573  3        1.881176
+density              15.410711  5        1.314566
+pH                   12.763752  4        1.374825
+sulphates             1.496500  1        1.223315
+total_sulfur_dioxide  8.541491  3        1.429735
+free_sulfur_dioxide   2.250880  1        1.500293
+residual_sugar       57.840757  3        1.966553
+citric_acid           1.597035  1        1.263738
+fixed_acidity         6.797880  2        1.614706
+volatile_acidity      6.797880  2        1.614706
+chlorides            12.802796  2        1.891586
+                                      Interacts With
+color                                        density
+density                        color, residual_sugar
+pH                   chlorides, total_sulfur_dioxide
+sulphates                                       --  
+total_sulfur_dioxide                              pH
+free_sulfur_dioxide                             --  
+residual_sugar                               density
+citric_acid                                     --  
+fixed_acidity                       volatile_acidity
+volatile_acidity                    volatile_acidity
+chlorides                                  chlorides
+                                                                                                                                           Other Predictors
+color                     pH, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, residual_sugar, citric_acid, fixed_acidity, volatile_acidity, chlorides
+density                                   pH, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, citric_acid, fixed_acidity, volatile_acidity, chlorides
+pH                                             color, density, sulphates, free_sulfur_dioxide, residual_sugar, citric_acid, fixed_acidity, volatile_acidity
+sulphates            color, density, pH, total_sulfur_dioxide, free_sulfur_dioxide, residual_sugar, citric_acid, fixed_acidity, volatile_acidity, chlorides
+total_sulfur_dioxide                color, density, sulphates, free_sulfur_dioxide, residual_sugar, citric_acid, fixed_acidity, volatile_acidity, chlorides
+free_sulfur_dioxide            color, density, pH, sulphates, total_sulfur_dioxide, residual_sugar, citric_acid, fixed_acidity, volatile_acidity, chlorides
+residual_sugar                     color, pH, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, citric_acid, fixed_acidity, volatile_acidity, chlorides
+citric_acid            color, density, pH, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, residual_sugar, fixed_acidity, volatile_acidity, chlorides
+fixed_acidity                              color, density, pH, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, residual_sugar, citric_acid, chlorides
+volatile_acidity                           color, density, pH, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, residual_sugar, citric_acid, chlorides
+chlorides                color, density, sulphates, total_sulfur_dioxide, free_sulfur_dioxide, residual_sugar, citric_acid, fixed_acidity, volatile_acidity</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>values <span class="ot">&lt;-</span> super_vifs[, <span class="dv">3</span>]</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>mean_value <span class="ot">&lt;-</span> <span class="fu">mean</span>(values)</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mean_value)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1.552291</code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

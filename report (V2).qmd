@@ -1,0 +1,264 @@
+---
+title: "Assessing Wine Quality"
+output: pdf_document
+---
+$\text{Ethan Beckstead, Anna Fellars, Becca Goldrup, Meggan Green}$
+
+
+```{=pdf}
+<style type="text/css">
+body {
+  font-size: 13.5px; /* Adjust the font size as needed */
+}
+h1.title {
+  font-size: 40px;
+  text-align: center;
+}
+h4.author {
+  font-size: 40px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 23px; /* Adjust the font size for h1 */
+}
+
+h3 {
+  font-size: 16px; /* Adjust the font size for h3 */
+}
+
+</style>
+```
+\newpage
+
+```{r setup, include=FALSE}
+library(multcomp)
+library(tidyverse)
+library(ggplot2)
+library(multcomp)
+library(car)
+library(corrplot)
+library(ggfortify)
+library(bestglm)
+library(patchwork)
+library(glmnet)
+library(dplyr)
+ 
+## import data
+data <- read.table("wine.csv", sep = ",", header = TRUE, na.strings = "?")
+data$color <- factor(data$color)
+
+## split data to test and training groups.
+set.seed(123)  
+
+index <- sample(1:nrow(data), nrow(data) / 2)
+
+data_train <- data[index, ]
+data_test <- data[-index, ]
+```
+
+# Abstract
+In this report, we use data from samples of the Portuguese vinho verde wine to assess the effect of wine color and a series of physicochemical tests on wine quality assessment. We seek to understand two main questions. First, which variables are useful in predicting wine quality, and what are their effects? Second, are there significant interactions among predictors and is a model including interactions more useful than one without? We find that color, volatile acidity, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, sulphates, and alcohol are all significant predictors of wine quality. While there are significant interactions in the model, we find that a model including interactions is not significantly different from a model without interactions. Thus, we advocate for the use of the simpler model. 
+
+# Problem and Motivation
+The wine industry is growing, becoming more accessible to a wider range of consumers. Portugal is the eighth-highest wine-exporting country, with its vinho verde wine being a particularly popular export. As this industry grows, companies have begun investing in new technology to improve wine production and selling processes. Two factors are critical elements in this context: wine certification and quality assessment. Certification is done to assure the quality of the wine for the market and safeguard human health. Quality evaluation, which is part of the certification process, is done to improve wine-making by identifying the most influential factors in quality outcomes and stratifying wines to set prices.
+
+Wine certification is assessed by both physicochemical and sensory tests. Physicochemical tests include easily measurable attributes such as pH, density, and alcohol content, while sensory tests rely on human experts. However, the relationship between the physicochemical and sensory analysis is not well understood. If we could better understand how physicochemical tests affect taste rating, then companies would be better able to predict wine quality while in the production phase, allowing them to optimize production and sell higher-quality wines.
+
+### Data Description
+In our study, we combined two data sets related to red and white variants of the vinho verde wine from the north of Portugal. Data were collected to predict wine quality based on a series of physicochemical tests. There are 11 physicochemical predictors used in the model: fixed acidity (g(tartaric acid)/dm\^3), volatile acidity (g(acetic acid)/dm\^3), citric acid (g/dm\^3), residual sugar (g/dm\^3), chlorides (g(sodium chloride)/dm\^3), free sulfur dioxide (mg/dm\^3), total sulfur dioxide (mg/dm\^3), density (g/cm\^3), pH, sulfates (g(potassium sulfate)/dm\^3), and alcohol (vol.%). Lastly, wine color is also used as a binary predictor variable, with 0 representing red and 1 representing white. The response variable, wine quality, was measured as the median score of three sensory assessors who graded the wine on a scale of 0 (very bad) to 10 (excellent). A total of 6497 wine samples were collected, of which 1599 were red and 4898 were white. The observational unit is the individual wine samples.
+
+### Questions of Interest
+When gathering the data, researchers were unclear on the potential relevance of the predictor variables. Thus, we first seek to understand which physiochemical tests are useful predictors to model wine quality, and what the effect of the relevant variables are. Second, we seek to understand if there are potentially significant interactions between predictors and if including these interactions significantly improves our model.
+
+### Regression Methods
+
+To analyze our first question, we will use variable selection to fit a multiple linear regression model. The variable selection method we use is the elastic net (using MSE as the model metric). After selecting the variables we will use and fitting the linear model, we will run diagnostic checks to ensure that the linear regression assumptions are met. The theoretical model, prior to using variable selection methods, is as follows:
+
+\begin{align*}
+\text{Quality}_i &= \beta_0 + \beta_1 \times \text{I}(\text{Color}_i = \text{White}) + \beta_2 \times \text{FixedAcidity}_i \\
+&\quad + \beta_3 \times \text{VolatileAcidity}_i + \beta_4 \times \text{CitricAcid}_i + \beta_5 \times \text{ResidualSugar}_i \\
+&\quad + \beta_6 \times \text{Chlorides}_i + \beta_7 \times \text{FreeSulfurDioxide}_i + \beta_8 \times \text{TotalSulfurDioxide}_i \\
+&\quad + \beta_9 \times \text{Density}_i + \beta_{10} \times \text{PH}_i + \beta_{11} \times \text{Sulphates}_i \\
+&\quad + \beta_{12} \times \text{Alcohol}_i + \epsilon_i, \text{ where } \epsilon_i \stackrel{iid}{\tilde{}}N(0,\sigma^2)
+\end{align*}
+
+To analyze our second question, we will first find all of the potentially significant interactions between predictor variables. Because there are a larger number of predictors in our model, and thus a large number of potential interactions, we then utilize variable selection again to ensure our model is not overfit. We use the step-wise variable selection method (using BIC as the model metric) and elastic net. After fitting the linear model, now including interaction terms, we again run diagnostic checks to ensure that assumptions are still met. Lastly, we perform an ANOVA analysis to test if the model with interactions is significantly different than the model fit without interactions. This will allow us to test if our model is improved by including interaction effects.
+
+# Analyses, Results, and Interpretation
+To answer our first question, we first begin running variable selection. Elastic net is a shrinkage method, in which estimated coefficients are shrunk towards 0, meaning it can also be used as a variable selection method. This is a beneficial method to address potential multicollinearity, as it slightly biases the coefficients to reduce their variance. Elastic net tends to have better predictive performance than other shrinkage methods, as it can select more than one variable from a group of correlated predictors.
+
+```{r, style='font-size: 0.8em;'}
+data_x <- as.matrix(data_train[, 1:12])
+data_y <- data_train[, 13]
+data_elastic_cv <- cv.glmnet(x = data_x, 
+                          y = data_y, 
+                          type.measure = "mse", 
+                          alpha = 0.5)
+coef(data_elastic_cv, s = "lambda.1se")
+```
+
+Based on the results of elastic net, we identified the following predictors to be used in our multiple linear regression model: color, volatile acidity, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, pH, sulphates, and alcohol.
+
+```{r, style='font-size: 0.8em;'}
+bestmod <- lm(quality ~ color + volatile_acidity + residual_sugar + chlorides + free_sulfur_dioxide + total_sulfur_dioxide + pH + sulphates + alcohol, data = data_train)
+data_train$residuals <- bestmod$residuals
+data_train$fitted <- bestmod$fitted.values
+```
+
+We then fit the multiple linear regression model, but before using this model, it is critical to check the diagnostic assumptions to ensure that it is valid to be used for predictions. First, to check that the relationship between the predictor variables and quality rating is linear, we used partial regression plots.
+
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+avPlots(bestmod)
+```
+
+Each of these plots shows a linear relationship between the variables, indicating that this assumption is met. For independence, because the wine samples all came from one northern Portugal region, there could be spatial dependence. It was unclear how the data was collected, so we cannot verify independence, but we will proceed as though this assumption is met. To check that the residuals are normally distributed, we used a Q-Q plot and the Shapiro-Wilk test.
+
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+autoplot(bestmod, which = 2, ncol = 1, nrow = 1)  +
+ coord_equal()
+
+shapiro.test(data_train$residuals)
+```
+
+Based on the Q-Q plot, there seems to be some non-normality, which is confirmed by the Shapiro-Wilk test. Because we have high outliers in the data, we cannot perform a transformation to meet this assumption. We could try a robust regression that minimizes the absolute value of errors, which handles outliers better. However, this is beyond the scope of the class, so we will proceed as though the assumption is met.
+
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+autoplot(bestmod, which = 3, ncol = 1, nrow = 1)
+```
+
+The equal variance assumption is also met, as the relationship is largely linear and centered around 0. The appearance of the plot points in an abnormal pattern due to the nature of our response variable as a numeric scale, which can be treated as continuous but results in this unique plot. To check that there are no influential points in the data set, we use a plot of Cook's distance.
+
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+ autoplot(bestmod, which = 4, ncol = 1, nrow = 1)  +
+ scale_y_continuous(limits = c(0, 1)) +
+  theme(aspect.ratio = 1)
+```
+
+Based on this plot, we conclude that this assumption is also met, as there are no points that have a Cook's distance of greater than 0.5. Lastly, we check for multicollinearity by checking the VIFs of the predictor variables.
+
+```{r, style='font-size: 0.8em;'}
+vif(bestmod)
+mean(vif(bestmod)) 
+```
+
+This assumption is also met, as no VIFs exceed 10, and the mean is close to 1. Because each of the assumptions necessary for multiple linear regression is met, we can move forward with using this model.
+
+```{r, style='font-size: 0.8em;'}
+summary(bestmod)
+```
+Based on this model, holding all else constant, a red wine sample will have an average quality ranking of 1.91. Holding all else constant, white wine samples will have an average quality ranking 0.25 points lower than red wine samples. This is highly significant, with a p-value of less than 0.001. Holding all else constant, as volatile acidity increases by 1 g/dm^3, average quality ranking will decrease by 1.59 points. This is highly significant, with a p-value of less than 0.001. Holding all else constant, as residual sugar increases by 1 gm/dm^3, average quality ranking will increase by 0.02 points. Although this is highly significant, with a p-value of less than 0.001, this is a very small effect on overall taste rating and thus may not play as important of a role as other predictors. Holding all else constant, as the sodium chloride content increases by 1 g/dm^3, the average quality ranking decreases by 1.28 points. This is significant, with a p-value of less than 0.01. Holding all else constant, as free sulfur dioxide increases by 1 mg/dm^3, average quality ranking increases by 0.006. Holding all else constant, as total sulfur dioxide increases by 1 mg/dm^3, average quality ranking decreases by 0.001. Although both of these are significant, their effects are almost minute on quality ranking. Holding all else constant, as the pH increases by 1, average quality ranking increases by 0.13, but this relationship is not significant at a 0.05 level. Holding all else constant, as potassium sulphate content increases by 1 g/dm^3, average quality ranking increases by 0.52. This is highly significant, with a p-value of less than 0.001. Lastly, as the alcohol volume increases by 1%, holding all else constant, the average quality ranking increases by 0.36. This is highly significant, with a p-value of less than 0.001. Adjusted for the number of predictors, this model can explain 30.59% of the variance in wine quality ranking.
+
+To answer our second question, we begin by fitting a multiple linear regression model with all potentially significant interaction effects included.
+
+```{r, style='font-size: 0.8em;'}
+# Finding all significant two-way interactions
+data_train1 <- data_train |> 
+  dplyr::select(-residuals, -fitted)
+allmod <- lm(quality ~ .^2, data_train1)
+results <- anova(allmod)
+p_values <- results[, "Pr(>F)"]
+var_names <- names(coef(allmod))
+significant_vars <- var_names[p_values < 0.005]
+
+# Fitting model
+intmod <- lm(quality ~ color + fixed_acidity + citric_acid + residual_sugar + free_sulfur_dioxide + total_sulfur_dioxide + density + pH + sulphates + color:fixed_acidity + color:chlorides + color:density + color:pH + fixed_acidity:volatile_acidity + fixed_acidity:citric_acid + fixed_acidity:chlorides + volatile_acidity:sulphates + volatile_acidity:alcohol + residual_sugar:chlorides + residual_sugar:total_sulfur_dioxide + residual_sugar:density + chlorides:pH + chlorides:alcohol + total_sulfur_dioxide:pH + density:sulphates, data = data_train1)
+```
+
+We then use elastic net to reduce the model to only include interactions that most improve the model along the given metric. The results of the methods are given below.
+```{r, include=FALSE}
+set.seed(123)  
+```
+
+```{r, fig.align='center', style='font-size: 0.8em'}
+selected_columns <- c("color","fixed_acidity", "citric_acid", "residual_sugar",
+                      "free_sulfur_dioxide", 
+                      "total_sulfur_dioxide", "density", "pH", "sulphates")
+data_x_with_interactions <- model.matrix(~ color*density + color*pH + 
+                                   fixed_acidity:volatile_acidity +
+                                    sulphates + total_sulfur_dioxide +
+                                    free_sulfur_dioxide + residual_sugar +
+                                    citric_acid + fixed_acidity +
+                                   fixed_acidity:citric_acid + 
+                                   fixed_acidity:chlorides + 
+                                   residual_sugar:total_sulfur_dioxide + 
+                                   residual_sugar:density + 
+                                   pH:chlorides + 
+                                   chlorides:alcohol + 
+                                   total_sulfur_dioxide:pH, data = data_train1)
+data_x_with_interactions <- data_x_with_interactions[, -which(colnames(data_x_with_interactions) == "(Intercept)")]
+
+data_elastic_cv <- cv.glmnet(x = data_x_with_interactions, 
+                             y = data_train1$quality, 
+                             type.measure = "mse", 
+                             alpha = 0.5) 
+coef(data_elastic_cv, s = "lambda.1se")
+```
+
+Based on the variable selection, we include the following interactions in our model: fixed acidity and volatile acidity, density and residual sugar, pH and chlorides, and pH and total sulfur dioxide. The results of the new model, including interaction effects, are given below. The assumptions for multiple linear regression were still met when interactions were included in the model (see the appendix for more details). Although not all variables in the model are significant, they were included because they had a significant interaction effect.
+
+```{r, style='font-size: 0.8em;'}
+interaction_mod <- lm(quality ~ color*density + pH + sulphates +
+                        total_sulfur_dioxide + free_sulfur_dioxide +
+                        residual_sugar + citric_acid + fixed_acidity +
+                        fixed_acidity:volatile_acidity + 
+                        density:residual_sugar + pH:chlorides + 
+                        pH:total_sulfur_dioxide,
+                      data = data_train1)
+summary(interaction_mod)
+```
+
+To test if the model including interactions is significantly different from the model without interactions, we used an ANOVA comparison. In this, our null hypothesis is that there is no significant difference in the predictive performance of the two models, while the alternative hypothesis is that there is a significant difference in the predictive performance.
+
+```{r, style='font-size: 0.8em;'}
+anova(interaction_mod, bestmod)
+```
+
+The results of the F-test are insignificant. Thus, we fail to reject the null hypothesis that there is no significant difference in the predictive performance of the two models. Because the model including interactive effects is not significantly better than the model without, we suggest that it is better to use the simpler model for ease of interpretation.
+
+# Conclusions
+Ultimately, we find that color, volatile acidity, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, sulfates, and alcohol are each significant predictors of wine quality, although some of these predictors have very small effects on quality ranking. While there were significant interactions between predictors, the model overall was not significantly different from a model without interaction effects and thus suggests that the model without predictors should be used going forward. The predictive ability of this model is beneficial to companies, who can use these tests to better predict wine quality to optimize their product production and create higher quality wines. However, it should be noted that the generalizability of this model is limited, as it can only be generalized to Vinho Verde wines coming out of Portugal. Further research should be done to expand these findings to other types of brands and other exporting countries.
+
+# Contributions
+We coordinated several meetings with everyone in attendance to choose a data set, discuss questions of interest, run through model assumptions, and interpret output. We took turns generating code to do this analysis. Becca worked on the base model, Anna created the interaction model, and Ethan used variable selection for the interaction model and tested for significant difference between the two. Meggan interpreted the final model selected and its significance for predicting wine quality, as well as composed the report. Anna and Becca met with instructors to review errors before submission. We all met as a group to cover concerns and check our understanding of our results. Dr. Heiner was extremely helpful in helping us conduct a study that made us feel statistically empowered. He was the most valuable group member of us all.
+
+\newpage
+# Appendix
+Below are the results of the assumption checks for the model including interaction effects.
+
+Linearity Assumption: met. All plots show linear relationships between variables. 
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+avPlots(interaction_mod)
+```
+Independence Assumption: same conclusion as model without interactions. We proceed as though it is met. 
+
+Normality Assumption: not met. However, like with the model without interactions, robust regression is beyond the scope of our course. Thus, we do not perform a transformation and proceed as though the assumption is met.  
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+autoplot(bestmod, which = 2, ncol = 1, nrow = 1)  +
+ coord_equal()
+
+data_train1$residuals <- interaction_mod$residuals
+shapiro.test(data_train$residuals)
+```
+
+Equal Variance Assumption: met, relationship is fairly linear. 
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+autoplot(interaction_mod, which = 3, ncol = 1, nrow = 1)
+```
+
+No influential points: met. No points greater than 0.5.
+```{r, fig.align='center', out.width='50%', out.height='50%', style='font-size: 0.8em;'}
+ autoplot(interaction_mod, which = 4, ncol = 1, nrow = 1)  +
+ scale_y_continuous(limits = c(0, 1)) +
+  theme(aspect.ratio = 1)
+```
+
+No multicollinearity: looking at the scaled values in the 4th column (GVIF^(1/(2*Df))), we see no VIF exceeds 10, and their mean is close to 1. 
+```{r, style='font-size: 0.8em;'}
+super_vifs <- vif(interaction_mod, type = "predictor")
+super_vifs
+
+values <- super_vifs[, 3]
+mean_value <- mean(values)
+print(mean_value)
+```
